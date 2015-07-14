@@ -15,8 +15,8 @@ debver = $(shell LC_ALL=C dpkg-parsechangelog | grep '^Version:' | cut -d ' ' -f
 upstreamver = $(shell echo $(debver) | cut -d '-' -f 1,1 )
 
 # this figures out the last merge point from 'master' into the Debian branch and
-# then described this commit relative to the last release tag (V...)
-# If this should make any sense the local master branch must track upstream's
+# then described this commit relative to the last release tag
+# For this to make any sense the local master branch must track upstream's
 # master or whatever other source branch.
 gitver = $(shell [ -x /usr/bin/git ] && git describe --tags --match '[0-9]\.[0-9a-z]*' $$(git merge-base -a HEAD master) | sed -e 's/-/+git/')~dfsg.1
 
@@ -32,7 +32,9 @@ override_dh_install:
 	if [ -x /usr/bin/dh_numpy ]; then dh_numpy;	fi
 	dh_install
 
-## immediately useable documentation and exemplar scripts/data
+# immediately useable documentation and exemplar scripts/data
+# this anticipates the documentation actually being built at some
+# point
 override_dh_compress:
 	: # I: Avoiding compression of what should not be compressed
 	dh_compress -X.py -X.html -X.pdf -X.css -X.jpg -X.txt -X.js -X.json -X.rtc -Xobjects.inv
@@ -44,6 +46,8 @@ override_dh_clean:
 	-find . -name '*.pyc' -delete
 	dh_clean
 
+# run this target manually whenever a merge from upstream's master into the
+# Debian branch is done.
 dfsg-source-tree:
 	-quilt pop -a
 	@echo "Testing for uncommited changes"
@@ -61,7 +65,7 @@ get-orig-source: dfsg-source-tree
 	git archive --format=tar --prefix=$(srcpkg)-$(gitver)/ HEAD | \
 		gzip -9 > $(srcpkg)_$(gitver).orig.tar.gz
 
-# check that DSC patches still apply
+# check that DSC patches for backports still apply
 maint-check-dsc-patches:
 	@for p in debian/patches/*-dsc-patch; \
 		do echo "check $$p"; \
